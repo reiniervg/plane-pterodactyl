@@ -9,11 +9,31 @@ cd /home/container
 CURRENT_UID="$(id -u)"
 CURRENT_GID="$(id -g)"
 
-NSS_WRAPPER_LIB="$(find /usr/lib /lib -type f -name 'libnss_wrapper.so' 2>/dev/null | head -n1 || true)"
+NSS_WRAPPER_LIB=""
+
+# Prefer the dynamic linker cache; Debian/Ubuntu commonly installs the library
+# in a multi-arch directory and libnss_wrapper.so may itself be a symlink.
+if command -v ldconfig >/dev/null 2>&1; then
+    NSS_WRAPPER_LIB="$(ldconfig -p 2>/dev/null | awk '/libnss_wrapper\.so/{print $NF; exit}' || true)"
+fi
+
+# Fallback: search common library roots. Do NOT restrict to -type f because the
+# unversioned .so can be a symlink.
 if [ -z "${NSS_WRAPPER_LIB}" ]; then
-    echo "ERROR: libnss_wrapper.so was not found in the image." >&2
+    NSS_WRAPPER_LIB="$(find /usr/lib /usr/lib64 /lib /lib64 \
+        \( -name 'libnss_wrapper.so' -o -name 'libnss_wrapper.so.*' \) \
+        2>/dev/null | head -n1 || true)"
+fi
+
+if [ -z "${NSS_WRAPPER_LIB}" ] || [ ! -e "${NSS_WRAPPER_LIB}" ]; then
+    echo "ERROR: libnss_wrapper is not available in the image." >&2
+    echo "Diagnostic library search:" >&2
+    find /usr/lib /usr/lib64 /lib /lib64 -maxdepth 4 \
+        -iname '*nss*wrapper*' -print 2>/dev/null >&2 || true
     exit 1
 fi
+
+echo "Using NSS wrapper: ${NSS_WRAPPER_LIB}"
 
 mkdir -p /home/container/.nss
 
