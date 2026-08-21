@@ -1,0 +1,85 @@
+{
+    "_comment": "Plane CE True All-In-One for Pterodactyl \u2014 Plane + PostgreSQL + Redis + RabbitMQ + MinIO in one server.",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-08-22T01:20:00+02:00",
+    "name": "Plane CE - True All-In-One",
+    "author": "reiniervg",
+    "description": "LOW-CONFIG TRUE ALL-IN-ONE. Runs Plane Community Edition plus PostgreSQL, Redis, RabbitMQ and MinIO inside ONE Pterodactyl server/container. No external database, Redis, RabbitMQ or object-storage instances are required. Internal services bind only to 127.0.0.1 and all data/secrets persist under /home/container. Set only the public domain; SSL is terminated by Nginx on the host.",
+    "features": null,
+    "docker_images": {
+        "Plane CE v1.4.0 - True AIO ptero4": "ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero4"
+    },
+    "file_denylist": [
+        ".plane-internal-secrets",
+        ".plane-service-env"
+    ],
+    "startup": "exec /app/start.sh",
+    "config": {
+        "files": "{}",
+        "startup": "{\"done\": [\"success: api entered RUNNING state\", \"success: proxy entered RUNNING state\", \"Plane CE - Pterodactyl True All-In-One\"]}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/ash\nset -eu\n\nmkdir -p                   /mnt/server/logs/access                   /mnt/server/logs/error                   /mnt/server/logs/backend                   /mnt/server/logs/services                   /mnt/server/data                   /mnt/server/.config                   /mnt/server/.local/share                   /mnt/server/services/postgres/data                   /mnt/server/services/postgres/run                   /mnt/server/services/redis                   /mnt/server/services/rabbitmq/data                   /mnt/server/services/rabbitmq/log                   /mnt/server/services/rabbitmq/home                   /mnt/server/services/rabbitmq/plugins                   /mnt/server/services/minio/data/uploads\n\ncat > /mnt/server/README-PLANE-AIO.txt <<'EOF'\nPlane CE - True All-In-One Pterodactyl\n\nThis ONE Pterodactyl server contains:\n  - Plane application stack\n  - PostgreSQL (internal 127.0.0.1:5432)\n  - Redis (internal 127.0.0.1:6379)\n  - RabbitMQ (internal 127.0.0.1:5672)\n  - MinIO (internal 127.0.0.1:9000)\n\nYou DO NOT need to create separate Pterodactyl database/services.\n\nPublic service:\n  - Only the primary Pterodactyl allocation, e.g. 30080/TCP\n\nPersistent locations:\n  - services/postgres\n  - services/redis\n  - services/rabbitmq\n  - services/minio\n  - plane.env\n  - .plane-internal-secrets\n  - logs/\n\nTLS:\n  - Keep Plane internal HTTP.\n  - Put Nginx/Certbot on the host in front of the primary allocation.\nEOF\n\necho \"Plane True All-In-One directories created.\"\n",
+            "container": "ghcr.io/pterodactyl/installers:alpine",
+            "entrypoint": "ash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Public Domain",
+            "description": "ONLY REQUIRED SETTING. Public hostname for Plane, without https://. Example: plane.district046.nl. Nginx/SSL will point this hostname to this server's primary allocation.",
+            "env_variable": "DOMAIN_NAME",
+            "default_value": "plane.district046.nl",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:253",
+            "field_type": "text"
+        },
+        {
+            "name": "Public Protocol",
+            "description": "Keep on https for production. Plane itself remains HTTP internally; Nginx on the Pterodactyl host terminates SSL.",
+            "env_variable": "APP_PROTOCOL",
+            "default_value": "https",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": "required|string|in:https,http",
+            "field_type": "text"
+        },
+        {
+            "name": "Upload Limit",
+            "description": "Maximum Plane upload size in bytes. Default 104857600 = 100 MiB.",
+            "env_variable": "FILE_SIZE_LIMIT",
+            "default_value": "104857600",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:1048576|max:1073741824",
+            "field_type": "text"
+        },
+        {
+            "name": "API Rate Limit",
+            "description": "Plane API rate limit. Safe default; normally leave unchanged.",
+            "env_variable": "API_KEY_RATE_LIMIT",
+            "default_value": "60/minute",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "Authentication Rate Limit",
+            "description": "Anonymous authentication rate limit. Normally leave unchanged.",
+            "env_variable": "AUTHENTICATION_RATE_LIMIT",
+            "default_value": "10/minute",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|max:64",
+            "field_type": "text"
+        }
+    ]
+}

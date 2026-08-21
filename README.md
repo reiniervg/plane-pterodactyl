@@ -1,205 +1,111 @@
-# Plane CE on Pterodactyl
+# Plane CE True All-In-One — Pterodactyl ptero4
 
-This package contains a Pterodactyl egg for **Plane Community Edition v1.4.0**.
+This is the version where **everything really runs in one Pterodactyl server/container**.
 
-## Why a wrapper image is required
+Inside the single container:
 
-Plane's official AIO image is not directly compatible with current Pterodactyl Wings:
+- Plane CE v1.4.0 application stack
+- PostgreSQL
+- Redis
+- RabbitMQ
+- MinIO
 
-- Wings runs server containers as the Pterodactyl UID/GID.
-- Wings uses a read-only root filesystem.
-- Plane's official AIO writes runtime state under `/app`.
-- Plane's AIO Supervisor config contains `user=root`.
+No separate Pterodactyl database, Redis server, RabbitMQ server, MinIO server or Docker Compose stack is required.
 
-The included Dockerfile keeps Plane's official application filesystem but redirects writable state to `/home/container`, removes the root-only Supervisor setting, and uses a Pterodactyl-compatible entrypoint.
+Plane's official deployment normally runs these as separate containers. The ptero4 wrapper deliberately combines them because this egg is designed for a simple one-server Pterodactyl deployment.
 
-## Important: Plane still needs four external services
+## Pterodactyl configuration
 
-Plane's AIO image combines the Plane application components, but it still requires:
-
-1. PostgreSQL
-2. Valkey/Redis
-3. RabbitMQ
-4. S3-compatible object storage, for example MinIO
-
-An optional Compose stack is included under `dependencies/`.
-
-## 1. Build the Pterodactyl-compatible Plane image
-
-Create a GitHub repository and upload:
-
-- `Dockerfile`
-- `ptero-entrypoint.sh`
-- `.github/workflows/build.yml`
-
-Push to `main` or manually run the workflow.
-
-It publishes:
+Recommended:
 
 ```text
-ghcr.io/YOUR_GITHUB_OWNER/pterodactyl-plane:v1.4.0
-ghcr.io/YOUR_GITHUB_OWNER/pterodactyl-plane:latest
+RAM: 8192 MB
+CPU: 400% if available
+Disk: 30 GB minimum
+Allocation: one TCP port, e.g. 30080
 ```
 
-Make the GHCR package public, or configure GHCR credentials in Wings.
+Only one allocation is needed.
 
-Then edit `egg-plane-pterodactyl.json` and replace:
+Internal services are loopback-only:
 
 ```text
-ghcr.io/replace-me/pterodactyl-plane:v1.4.0
+127.0.0.1:5432  PostgreSQL
+127.0.0.1:6379  Redis
+127.0.0.1:5672  RabbitMQ
+127.0.0.1:9000  MinIO API
+127.0.0.1:9090  MinIO console (not published)
 ```
 
-with your actual image.
+They do not need firewall rules or extra Pterodactyl allocations.
 
-## 2. Optional dependency stack
+## Egg variables
 
-Copy:
+Normally change only:
 
 ```text
-dependencies/.env.example
+DOMAIN_NAME=plane.district046.nl
 ```
 
-to:
+Everything else is generated/configured automatically.
+
+The image generates unique random values for:
+
+- PostgreSQL password
+- Redis password
+- RabbitMQ password
+- MinIO access/secret keys
+- Django SECRET_KEY
+- Plane LIVE_SERVER_SECRET_KEY
+
+They are persisted in:
 
 ```text
-dependencies/.env
+/home/container/.plane-internal-secrets
 ```
 
-Change all passwords and set `BIND_IP` to a private IP reachable from Plane.
+Do not delete that file on an existing installation.
 
-Start:
+## GitHub build
 
-```bash
-cd dependencies
-docker compose up -d
-```
+Put these files in the root of `reiniervg/plane-pterodactyl` and push to main.
 
-Do not publicly expose ports 5432, 6379, 5672 or 9000.
-
-Example Plane variables for `BIND_IP=10.0.0.10`:
+The workflow publishes:
 
 ```text
-DATABASE_URL=postgresql://plane:POSTGRES_PASSWORD@10.0.0.10:5432/plane
-REDIS_URL=redis://:REDIS_PASSWORD@10.0.0.10:6379/0
-AMQP_URL=amqp://plane:RABBITMQ_PASSWORD@10.0.0.10:5672/plane
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=plane
-AWS_SECRET_ACCESS_KEY=MINIO_SECRET_KEY
-AWS_S3_BUCKET_NAME=uploads
-AWS_S3_ENDPOINT_URL=http://10.0.0.10:9000
+ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero4
 ```
 
-URL-encode reserved characters in passwords before putting them in a URL.
+Then change the existing Plane Pterodactyl server Docker image to that tag.
 
-## 3. Import the egg
+For a clean switch from the old external-dependency test build, a Pterodactyl reinstall is recommended because the new version creates its own persistent embedded service directories.
 
-In Pterodactyl:
+## SSL
+
+Plane listens on the primary Pterodactyl allocation as HTTP.
+
+Example:
 
 ```text
-Admin Panel
-→ Nests
-→ choose/create an Applications nest
-→ Import Egg
-→ egg-plane-pterodactyl.json
+Internet HTTPS :443
+   -> Nginx on host
+   -> http://57.131.143.33:30080
+   -> Plane
 ```
 
-Create a Plane server with one TCP allocation, for example:
+Keep `APP_PROTOCOL=https`.
+
+Do not expose PostgreSQL, Redis, RabbitMQ or MinIO publicly.
+
+## Backups
+
+Back up the complete Pterodactyl server directory. Most importantly:
 
 ```text
-30080
+/home/container/services/postgres
+/home/container/services/redis
+/home/container/services/rabbitmq
+/home/container/services/minio
+/home/container/.plane-internal-secrets
+/home/container/plane.env
 ```
-
-Do not use port 80 or 443 inside the Pterodactyl container.
-
-Recommended starting resources:
-
-```text
-Memory: 4096 MB minimum, 6144–8192 MB preferred
-CPU:    200%+ depending on the node
-Disk:   10 GB+
-Port:   one TCP allocation, e.g. 30080
-```
-
-## 4. Configure Plane
-
-Set:
-
-```text
-DOMAIN_NAME=plane.example.com
-APP_PROTOCOL=https
-```
-
-and fill in the PostgreSQL, Redis, RabbitMQ and S3 variables.
-
-`SECRET_KEY` and `LIVE_SERVER_SECRET_KEY` can stay blank. Plane generates secure random values on first boot and the wrapper persists `plane.env` in `/home/container`.
-
-The Pterodactyl backend is plain HTTP:
-
-```text
-http://PTERODACTYL_NODE_IP:PTERODACTYL_ALLOCATION
-```
-
-## 5. HTTPS with Nginx + Let's Encrypt
-
-Copy `nginx-plane.conf.example` into your Nginx config.
-
-Replace:
-
-```text
-plane.example.com
-127.0.0.1:30080
-```
-
-with the real domain and Plane allocation.
-
-Install Nginx and Certbot:
-
-```bash
-apt update
-apt install -y nginx certbot python3-certbot-nginx
-```
-
-Check and reload Nginx:
-
-```bash
-nginx -t
-systemctl reload nginx
-```
-
-Request the certificate:
-
-```bash
-certbot --nginx -d plane.example.com
-```
-
-Certbot installs the certificate and can enable HTTP → HTTPS redirect.
-
-TLS intentionally terminates at Nginx. Plane talks HTTP only between Nginx and the Pterodactyl allocation, while `APP_PROTOCOL=https` makes Plane generate public HTTPS URLs.
-
-The Nginx example forwards WebSocket headers for Plane's live/collaboration traffic.
-
-## 6. First administrator
-
-After Plane starts, open:
-
-```text
-https://plane.example.com/god-mode/
-```
-
-Use the trailing slash.
-
-Complete the setup and create the first administrator.
-
-## Updating Plane
-
-The package is pinned to Plane v1.4.0.
-
-For an update:
-
-1. Back up `plane.env` and the external dependency data.
-2. Change `PLANE_VERSION` in the build workflow.
-3. Build/push a new wrapper image.
-4. Point the egg/server at the new pinned image tag.
-5. Restart and verify migrations.
-
-Avoid switching production directly to RC/prerelease tags.
