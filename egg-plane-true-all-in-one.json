@@ -7,10 +7,10 @@
     "exported_at": "2026-08-22T01:20:00+02:00",
     "name": "Plane CE - True All-In-One",
     "author": "reiniervg",
-    "description": "LOW-CONFIG TRUE ALL-IN-ONE. Plane CE + PostgreSQL + Redis + RabbitMQ + MinIO inside one Pterodactyl server. ptero7 fixes Django collectstatic on Wings' read-only root filesystem by persisting static-assets under /home/container, and forces the embedded MinIO mode on.",
+    "description": "LOW-CONFIG TRUE ALL-IN-ONE. Plane CE + PostgreSQL + Redis + RabbitMQ + MinIO inside one Pterodactyl server. ptero8 fixes the Supervisor config boundary so Plane's Caddy proxy and embedded PostgreSQL are separate programs.",
     "features": null,
     "docker_images": {
-        "Plane CE v1.4.0 - True AIO ptero7": "ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero7"
+        "Plane CE v1.4.0 - True AIO ptero8": "ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero8"
     },
     "file_denylist": [
         ".plane-internal-secrets",

@@ -66,7 +66,8 @@ COPY service-minio.sh /usr/local/bin/plane-service-minio
 COPY embedded-services.conf /tmp/embedded-services.conf
 
 # Plane invokes this exact Supervisor file, so append the embedded services to it directly.
-RUN cat /tmp/embedded-services.conf >> /etc/supervisor/conf.d/supervisor.conf \
+RUN printf '\n' >> /etc/supervisor/conf.d/supervisor.conf \
+    && cat /tmp/embedded-services.conf >> /etc/supervisor/conf.d/supervisor.conf \
     && rm -f /tmp/embedded-services.conf \
     && chmod 0755 \
         /ptero-entrypoint.sh \

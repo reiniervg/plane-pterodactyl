@@ -1,0 +1,35 @@
+Plane True All-In-One ptero8
+
+Root cause fixed:
+  priority=20[program:embedded-postgres]
+
+This malformed Supervisor boundary caused PostgreSQL's command to overwrite the
+existing Plane proxy program, so "proxy" actually ran PostgreSQL and Caddy never ran.
+
+ptero8 inserts a newline before embedded-services.conf is appended.
+
+New image:
+  ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero8
+
+Expected Supervisor programs:
+  proxy               -> caddy
+  embedded-postgres   -> postgres
+  embedded-redis      -> redis
+  embedded-rabbitmq   -> rabbitmq
+  embedded-minio      -> minio
+
+Expected ports:
+  :30080        Caddy / Plane public allocation
+  127.0.0.1:3004  Plane API
+  127.0.0.1:5432  PostgreSQL
+  127.0.0.1:6379  Redis
+  127.0.0.1:5672  RabbitMQ
+  127.0.0.1:9000  MinIO
+
+Deploy:
+  1. Replace GitHub repository with this ptero8 package.
+  2. Push to main; wait for GitHub Actions to finish.
+  3. Change the existing Pterodactyl server image to:
+       ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero8
+  4. Reinstall once.
+  5. Start and verify Caddy listens on :30080.
