@@ -6,11 +6,11 @@
     },
     "exported_at": "2026-08-22T00:27:00+02:00",
     "name": "Plane Community Edition",
-    "author": "admin@example.com",
+    "author": "reiniervg",
     "description": "Plane Community Edition v1.4.0 for Pterodactyl. Uses a Pterodactyl-compatible wrapper around Plane's official AIO application image. PostgreSQL, Valkey/Redis, RabbitMQ and S3-compatible object storage are external dependencies. HTTPS is terminated by a reverse proxy; Plane itself listens on the primary Pterodactyl allocation.",
     "features": null,
     "docker_images": {
-        "Plane v1.4.0 (replace image owner first)": "ghcr.io/replace-me/pterodactyl-plane:v1.4.0"
+        "Plane v1.4.0 - Pterodactyl Caddy Fix": "ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero2"
     },
     "file_denylist": [],
     "startup": "export SITE_ADDRESS=\":${SERVER_PORT}\" APP_PROTOCOL=\"https\"; exec /app/start.sh",
