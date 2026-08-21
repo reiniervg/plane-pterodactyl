@@ -1,4 +1,4 @@
-# Plane CE True All-In-One — Pterodactyl ptero4
+# Plane CE True All-In-One — Pterodactyl ptero5
 
 This is the version where **everything really runs in one Pterodactyl server/container**.
 
@@ -12,7 +12,7 @@ Inside the single container:
 
 No separate Pterodactyl database, Redis server, RabbitMQ server, MinIO server or Docker Compose stack is required.
 
-Plane's official deployment normally runs these as separate containers. The ptero4 wrapper deliberately combines them because this egg is designed for a simple one-server Pterodactyl deployment.
+Plane's official deployment normally runs these as separate containers. The ptero5 wrapper deliberately combines them because this egg is designed for a simple one-server Pterodactyl deployment.
 
 ## Pterodactyl configuration
 
@@ -73,7 +73,7 @@ Put these files in the root of `reiniervg/plane-pterodactyl` and push to main.
 The workflow publishes:
 
 ```text
-ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero4
+ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero5
 ```
 
 Then change the existing Plane Pterodactyl server Docker image to that tag.
@@ -109,3 +109,19 @@ Back up the complete Pterodactyl server directory. Most importantly:
 /home/container/.plane-internal-secrets
 /home/container/plane.env
 ```
+
+
+## ptero5 runtime UID fix
+
+Pterodactyl Wings normally runs containers using a numeric non-root UID/GID.
+That UID does not necessarily have an entry in the Docker image's `/etc/passwd`.
+
+PostgreSQL `initdb` requires `getpwuid()` to resolve the effective UID, otherwise it
+fails with:
+
+```text
+initdb: could not look up effective user ID ...: user does not exist
+```
+
+ptero5 uses `libnss_wrapper` to create a temporary runtime identity for whatever
+UID/GID Wings assigns. No root privileges and no hardcoded UID are required.

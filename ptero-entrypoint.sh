@@ -3,6 +3,37 @@ set -euo pipefail
 
 cd /home/container
 
+# Pterodactyl/Wings runs the container with a numeric UID/GID that may not exist
+# in the image's /etc/passwd. PostgreSQL initdb (and some other services) call
+# getpwuid(), so provide a runtime NSS identity without modifying the read-only rootfs.
+CURRENT_UID="$(id -u)"
+CURRENT_GID="$(id -g)"
+
+NSS_WRAPPER_LIB="$(find /usr/lib /lib -type f -name 'libnss_wrapper.so' 2>/dev/null | head -n1 || true)"
+if [ -z "${NSS_WRAPPER_LIB}" ]; then
+    echo "ERROR: libnss_wrapper.so was not found in the image." >&2
+    exit 1
+fi
+
+mkdir -p /home/container/.nss
+
+cat > /home/container/.nss/passwd <<EOF
+container:x:${CURRENT_UID}:${CURRENT_GID}:Pterodactyl Container:/home/container:/bin/bash
+EOF
+
+cat > /home/container/.nss/group <<EOF
+container:x:${CURRENT_GID}:
+EOF
+
+export NSS_WRAPPER_PASSWD=/home/container/.nss/passwd
+export NSS_WRAPPER_GROUP=/home/container/.nss/group
+export LD_PRELOAD="${NSS_WRAPPER_LIB}${LD_PRELOAD:+:${LD_PRELOAD}}"
+export USER=container
+export LOGNAME=container
+export HOME=/home/container
+
+echo "Pterodactyl runtime identity: UID=${CURRENT_UID} GID=${CURRENT_GID}"
+
 PORT="${SERVER_PORT:?Pterodactyl did not provide SERVER_PORT}"
 DOMAIN="${DOMAIN_NAME:-plane.example.com}"
 PUBLIC_PROTOCOL="${APP_PROTOCOL:-https}"

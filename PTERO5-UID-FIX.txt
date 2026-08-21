@@ -1,0 +1,28 @@
+Plane True All-In-One ptero5
+
+Fix for:
+  initdb: could not look up effective user ID 999: user does not exist
+
+Cause:
+  Wings runs the container as a numeric non-root UID/GID. PostgreSQL initdb requires
+  that effective UID to resolve through NSS/passwd.
+
+Fix:
+  ptero5 installs libnss_wrapper and generates a runtime passwd/group entry matching
+  the actual UID/GID used by Wings.
+
+New image:
+  ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero5
+
+Expected first startup:
+  Pterodactyl runtime identity: UID=999 GID=999
+  Initialising embedded PostgreSQL...
+  ... initdb succeeds ...
+
+Deploy:
+  1. Replace repository files with this ptero5 package.
+  2. Push to main.
+  3. Wait for GitHub Actions to build ptero5.
+  4. Change the existing Plane server Docker image to:
+       ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero5
+  5. Reinstall Plane once, then start it.

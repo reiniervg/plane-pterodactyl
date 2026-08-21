@@ -28,11 +28,11 @@ RUN set -eux; \
         chmod +x /usr/sbin/policy-rc.d; \
         apt-get update; \
         apt-get install -y --no-install-recommends \
-            postgresql postgresql-client redis-server rabbitmq-server ca-certificates; \
+            postgresql postgresql-client redis-server rabbitmq-server ca-certificates libnss-wrapper; \
         rm -f /usr/sbin/policy-rc.d; \
         rm -rf /var/lib/apt/lists/*; \
     elif command -v apk >/dev/null 2>&1; then \
-        apk add --no-cache postgresql postgresql-client redis rabbitmq-server ca-certificates; \
+        apk add --no-cache postgresql postgresql-client redis rabbitmq-server ca-certificates nss_wrapper; \
     else \
         echo "Unsupported Plane AIO base image: neither apt-get nor apk is available." >&2; \
         exit 1; \
