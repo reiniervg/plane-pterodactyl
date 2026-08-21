@@ -61,7 +61,7 @@ UPLOAD_LIMIT="${FILE_SIZE_LIMIT:-104857600}"
 
 mkdir -p \
     logs/access logs/error logs/backend logs/services \
-    data .config .local/share \
+    data data/static-assets .config .local/share \
     services/postgres/data services/postgres/run \
     services/redis \
     services/rabbitmq/data services/rabbitmq/log services/rabbitmq/home services/rabbitmq/plugins \
@@ -236,6 +236,7 @@ echo "PostgreSQL          : 127.0.0.1:5432 (embedded)"
 echo "Redis               : 127.0.0.1:6379 (embedded)"
 echo "RabbitMQ            : 127.0.0.1:5672 (embedded)"
 echo "MinIO               : 127.0.0.1:9000 (embedded)"
+echo "Django static root  : /home/container/data/static-assets"
 echo "Persistent root     : /home/container"
 echo "Secrets             : auto-generated and persisted"
 echo "------------------------------------------------"

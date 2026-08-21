@@ -1,4 +1,4 @@
-# Plane CE True All-In-One — Pterodactyl ptero6
+# Plane CE True All-In-One — Pterodactyl ptero7
 
 This is the version where **everything really runs in one Pterodactyl server/container**.
 
@@ -12,7 +12,7 @@ Inside the single container:
 
 No separate Pterodactyl database, Redis server, RabbitMQ server, MinIO server or Docker Compose stack is required.
 
-Plane's official deployment normally runs these as separate containers. The ptero6 wrapper deliberately combines them because this egg is designed for a simple one-server Pterodactyl deployment.
+Plane's official deployment normally runs these as separate containers. The ptero7 wrapper deliberately combines them because this egg is designed for a simple one-server Pterodactyl deployment.
 
 ## Pterodactyl configuration
 
@@ -73,7 +73,7 @@ Put these files in the root of `reiniervg/plane-pterodactyl` and push to main.
 The workflow publishes:
 
 ```text
-ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero6
+ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero7
 ```
 
 Then change the existing Plane Pterodactyl server Docker image to that tag.
@@ -111,7 +111,7 @@ Back up the complete Pterodactyl server directory. Most importantly:
 ```
 
 
-## ptero6 runtime UID fix
+## ptero7 runtime UID fix
 
 Pterodactyl Wings normally runs containers using a numeric non-root UID/GID.
 That UID does not necessarily have an entry in the Docker image's `/etc/passwd`.
@@ -123,13 +123,41 @@ fails with:
 initdb: could not look up effective user ID ...: user does not exist
 ```
 
-ptero6 uses `libnss_wrapper` to create a temporary runtime identity for whatever
+ptero7 uses `libnss_wrapper` to create a temporary runtime identity for whatever
 UID/GID Wings assigns. No root privileges and no hardcoded UID are required.
 
 
-## ptero6 NSS wrapper detection fix
+## ptero7 NSS wrapper detection fix
 
 The ptero5 entrypoint searched only regular files named exactly
 `libnss_wrapper.so`. On Debian/Ubuntu the unversioned library can be a symlink in
-a multi-arch directory. ptero6 first uses `ldconfig -p` and then searches common
+a multi-arch directory. ptero7 first uses `ldconfig -p` and then searches common
 library paths without filtering out symlinks.
+
+
+## ptero7 Django static-assets fix
+
+Pterodactyl Wings mounts the image root filesystem read-only. Plane's API startup runs:
+
+```text
+python manage.py collectstatic --noinput
+```
+
+and Plane v1.4.0 uses:
+
+```text
+/app/backend/plane/static-assets
+```
+
+as its Django static destination.
+
+ptero7 makes that path an image-time symlink to:
+
+```text
+/home/container/data/static-assets
+```
+
+which is writable and persistent in Pterodactyl.
+
+ptero7 also changes Plane's AIO environment template from `USE_MINIO=0` to
+`USE_MINIO=1`, because this custom image contains its own embedded MinIO service.

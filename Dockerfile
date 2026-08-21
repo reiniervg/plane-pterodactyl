@@ -46,7 +46,10 @@ RUN set -eux; \
     if [ -d /app/backend/plane ]; then \
         rm -rf /app/backend/plane/logs; \
         ln -s /home/container/logs/backend /app/backend/plane/logs; \
+        rm -rf /app/backend/plane/static-assets; \
+        ln -s /home/container/data/static-assets /app/backend/plane/static-assets; \
     fi; \
+    sed -i 's/^USE_MINIO=.*/USE_MINIO=1/' /app/plane.env.template; \
     CADDY_PATH="$(command -v caddy)"; \
     cat "${CADDY_PATH}" > /tmp/caddy.pterodactyl; \
     chmod 0755 /tmp/caddy.pterodactyl; \

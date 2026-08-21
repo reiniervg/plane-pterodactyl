@@ -1,0 +1,27 @@
+Plane True All-In-One ptero7
+
+Fixes:
+  OSError: [Errno 30] Read-only file system:
+  /app/backend/plane/static-assets
+
+Implementation:
+  /app/backend/plane/static-assets
+      -> /home/container/data/static-assets
+
+Also:
+  USE_MINIO=1 is now enforced in Plane's AIO template because MinIO is embedded.
+
+New image:
+  ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero7
+
+Deploy:
+  1. Replace the GitHub repository files with this ptero7 package.
+  2. Push to main and wait for GitHub Actions.
+  3. Change the existing Pterodactyl server image to:
+       ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero7
+  4. Reinstall once, then start.
+
+Expected after migrations:
+  collectstatic completes
+  gunicorn starts
+  Plane API listens on :3004
