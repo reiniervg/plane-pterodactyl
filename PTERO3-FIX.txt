@@ -1,0 +1,28 @@
+Plane Pterodactyl ptero3 fix
+
+Fixes:
+- Caddy Operation not permitted under Wings.
+- Plane listening on :80 while Wings maps SERVER_PORT -> SERVER_PORT.
+- Broken startup placeholder parsing.
+
+New image:
+ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero3
+
+Expected startup output for allocation 30080:
+  Plane Pterodactyl runtime:
+    SERVER_PORT=30080
+    SITE_ADDRESS=:30080
+    APP_PROTOCOL=https
+
+Expected Caddy log:
+  "addr":":30080"
+
+Deploy:
+1. Replace Dockerfile and ptero-entrypoint.sh in GitHub.
+2. Replace .github/workflows/build.yml.
+3. Commit/push to main and let Actions build ptero3.
+4. Change the EXISTING Pterodactyl server Docker Image to:
+   ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero3
+5. Startup command can simply be:
+   exec /app/start.sh
+6. Restart (reinstall is not required).

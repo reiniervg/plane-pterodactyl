@@ -11,12 +11,36 @@ mkdir -p \
   .config \
   .local/share
 
-if [ ! -f plane.env ]; then
-  cp /app/plane.env.template ./plane.env
+if [ ! -f /home/container/plane.env ]; then
+    cp /app/plane.env.template /home/container/plane.env
 fi
 
-MODIFIED_STARTUP=$(eval echo "$(echo "${STARTUP}" | sed -e 's/{{/${/g' -e 's/}}/}/g')")
+PORT="${SERVER_PORT:?SERVER_PORT is not set by Pterodactyl}"
 
-echo ":/home/container$ ${MODIFIED_STARTUP}"
+set_env_file() {
+    local key="$1"
+    local value="$2"
 
-exec /bin/bash -lc "${MODIFIED_STARTUP}"
+    if grep -q "^${key}=" /home/container/plane.env; then
+        sed -i "s|^${key}=.*|${key}=${value}|" /home/container/plane.env
+    else
+        printf '%s=%s\n' "${key}" "${value}" >> /home/container/plane.env
+    fi
+}
+
+# Pterodactyl maps host allocation N -> container port N.
+# Make Plane's internal Caddy listen on the same port.
+set_env_file "SITE_ADDRESS" ":${PORT}"
+
+# Public HTTPS is terminated by the host reverse proxy.
+set_env_file "APP_PROTOCOL" "${APP_PROTOCOL:-https}"
+
+echo "Plane Pterodactyl runtime:"
+echo "  SERVER_PORT=${PORT}"
+echo "  SITE_ADDRESS=:${PORT}"
+echo "  APP_PROTOCOL=${APP_PROTOCOL:-https}"
+
+export SITE_ADDRESS=":${PORT}"
+export APP_PROTOCOL="${APP_PROTOCOL:-https}"
+
+exec /app/start.sh

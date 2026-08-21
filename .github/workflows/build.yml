@@ -47,5 +47,5 @@ jobs:
           build-args: |
             PLANE_VERSION=v1.4.0
           tags: |
-            ${{ env.IMAGE_NAME }}:v1.4.0-ptero2
+            ${{ env.IMAGE_NAME }}:v1.4.0-ptero3
             ${{ env.IMAGE_NAME }}:latest
