@@ -7,10 +7,10 @@
     "exported_at": "2026-08-22T01:20:00+02:00",
     "name": "Plane CE - True All-In-One",
     "author": "reiniervg",
-    "description": "LOW-CONFIG TRUE ALL-IN-ONE. Plane CE + PostgreSQL + Redis + RabbitMQ + MinIO inside one Pterodactyl server. ptero8 fixes the Supervisor config boundary so Plane's Caddy proxy and embedded PostgreSQL are separate programs.",
+    "description": "LOW-CONFIG TRUE ALL-IN-ONE. Plane CE + PostgreSQL + Redis + RabbitMQ + MinIO inside one Pterodactyl server. ptero10 fixes embedded MinIO uploads by forcing USE_MINIO=1 for backend processes and proxying /uploads through Caddy.",
     "features": null,
     "docker_images": {
-        "Plane CE v1.4.0 - True AIO ptero8": "ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero8"
+        "ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero10": "Plane CE v1.4.0 - True AIO ptero10"
     },
     "file_denylist": [
         ".plane-internal-secrets",

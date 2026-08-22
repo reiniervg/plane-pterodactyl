@@ -1,0 +1,22 @@
+Plane True All-In-One ptero10
+
+Confirmed issue:
+  USE_MINIO=0
+  AWS_S3_ENDPOINT_URL=http://127.0.0.1:9000
+  MinIO health: HTTP 200
+
+Browser result:
+  http://127.0.0.1:9000/uploads -> ERR_CONNECTION_REFUSED
+
+Fix:
+  - force USE_MINIO=1 for API/worker/beat/migrator
+  - keep MinIO on 127.0.0.1:9000
+  - proxy /uploads and /uploads/* through Caddy
+  - public uploads use https://<Plane-domain>/uploads/...
+
+Image:
+  ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero10
+
+Upgrade:
+  Change the existing Pterodactyl Docker image to ptero10 and restart.
+  A full reinstall should not be necessary.

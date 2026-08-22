@@ -58,6 +58,11 @@ RUN set -eux; \
     sed -i '/^[[:space:]]*user=root[[:space:]]*$/d' /etc/supervisor/conf.d/supervisor.conf; \
     sed -i '/^\[supervisord\]$/a pidfile=/home/container/supervisord.pid\nchildlogdir=/home/container/logs' /etc/supervisor/conf.d/supervisor.conf
 
+COPY patch-caddy.py /tmp/patch-caddy.py
+RUN python3 /tmp/patch-caddy.py && rm -f /tmp/patch-caddy.py
+COPY patch-supervisor-minio.py /tmp/patch-supervisor-minio.py
+RUN python3 /tmp/patch-supervisor-minio.py && rm -f /tmp/patch-supervisor-minio.py
+
 COPY ptero-entrypoint.sh /ptero-entrypoint.sh
 COPY service-postgres.sh /usr/local/bin/plane-service-postgres
 COPY service-redis.sh /usr/local/bin/plane-service-redis

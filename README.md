@@ -1,4 +1,4 @@
-# Plane CE True All-In-One — Pterodactyl ptero8
+# Plane CE True All-In-One — Pterodactyl ptero10
 
 This is the version where **everything really runs in one Pterodactyl server/container**.
 
@@ -12,7 +12,7 @@ Inside the single container:
 
 No separate Pterodactyl database, Redis server, RabbitMQ server, MinIO server or Docker Compose stack is required.
 
-Plane's official deployment normally runs these as separate containers. The ptero8 wrapper deliberately combines them because this egg is designed for a simple one-server Pterodactyl deployment.
+Plane's official deployment normally runs these as separate containers. The ptero10 wrapper deliberately combines them because this egg is designed for a simple one-server Pterodactyl deployment.
 
 ## Pterodactyl configuration
 
@@ -73,7 +73,7 @@ Put these files in the root of `reiniervg/plane-pterodactyl` and push to main.
 The workflow publishes:
 
 ```text
-ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero8
+ghcr.io/reiniervg/pterodactyl-plane:v1.4.0-ptero10
 ```
 
 Then change the existing Plane Pterodactyl server Docker image to that tag.
@@ -111,7 +111,7 @@ Back up the complete Pterodactyl server directory. Most importantly:
 ```
 
 
-## ptero8 runtime UID fix
+## ptero10 runtime UID fix
 
 Pterodactyl Wings normally runs containers using a numeric non-root UID/GID.
 That UID does not necessarily have an entry in the Docker image's `/etc/passwd`.
@@ -123,19 +123,19 @@ fails with:
 initdb: could not look up effective user ID ...: user does not exist
 ```
 
-ptero8 uses `libnss_wrapper` to create a temporary runtime identity for whatever
+ptero10 uses `libnss_wrapper` to create a temporary runtime identity for whatever
 UID/GID Wings assigns. No root privileges and no hardcoded UID are required.
 
 
-## ptero8 NSS wrapper detection fix
+## ptero10 NSS wrapper detection fix
 
 The ptero5 entrypoint searched only regular files named exactly
 `libnss_wrapper.so`. On Debian/Ubuntu the unversioned library can be a symlink in
-a multi-arch directory. ptero8 first uses `ldconfig -p` and then searches common
+a multi-arch directory. ptero10 first uses `ldconfig -p` and then searches common
 library paths without filtering out symlinks.
 
 
-## ptero8 Django static-assets fix
+## ptero10 Django static-assets fix
 
 Pterodactyl Wings mounts the image root filesystem read-only. Plane's API startup runs:
 
@@ -151,7 +151,7 @@ and Plane v1.4.0 uses:
 
 as its Django static destination.
 
-ptero8 makes that path an image-time symlink to:
+ptero10 makes that path an image-time symlink to:
 
 ```text
 /home/container/data/static-assets
@@ -159,11 +159,11 @@ ptero8 makes that path an image-time symlink to:
 
 which is writable and persistent in Pterodactyl.
 
-ptero8 also changes Plane's AIO environment template from `USE_MINIO=0` to
+ptero10 also changes Plane's AIO environment template from `USE_MINIO=0` to
 `USE_MINIO=1`, because this custom image contains its own embedded MinIO service.
 
 
-## ptero8 Supervisor proxy fix
+## ptero10 Supervisor proxy fix
 
 The upstream Plane Supervisor config does not end with a newline. Previous wrapper
 builds appended the embedded-services configuration directly, resulting in:
@@ -176,7 +176,7 @@ That made the embedded PostgreSQL `command=` part of Plane's existing `[program:
 section. Supervisor therefore launched PostgreSQL under the `proxy` program name and
 Caddy never started.
 
-ptero8 explicitly inserts a newline before appending the embedded service sections:
+ptero10 explicitly inserts a newline before appending the embedded service sections:
 
 ```text
 [program:proxy]
@@ -193,3 +193,63 @@ Expected result:
 - `proxy` runs Caddy
 - `embedded-postgres` runs PostgreSQL
 - Caddy listens on the Pterodactyl primary allocation, e.g. `:30080`
+
+
+## ptero10 God Mode trailing-slash fix
+
+Plane's admin frontend is built with:
+
+```text
+basename="/god-mode/"
+```
+
+The upstream Caddy route also accepted `/god-mode` without the trailing slash.
+The SPA could therefore be served while React Router refused to render it.
+
+ptero10 changes the proxy routing to:
+
+```caddy
+redir /god-mode /god-mode/ 308
+
+handle_path /god-mode/* {
+    root * /app/admin
+    try_files {path} {path}/ /index.html
+    file_server
+}
+```
+
+This makes `/god-mode` canonicalize to `/god-mode/` before the admin SPA loads.
+
+
+## ptero10 embedded MinIO upload fix
+
+Confirmed failure mode:
+
+```text
+USE_MINIO=0
+AWS_S3_ENDPOINT_URL=http://127.0.0.1:9000
+```
+
+MinIO itself is healthy, but a browser cannot reach the container's `127.0.0.1`.
+ptero10 keeps MinIO private and proxies the bucket through Plane:
+
+```caddy
+handle /uploads {
+    reverse_proxy 127.0.0.1:9000
+}
+
+handle /uploads/* {
+    reverse_proxy 127.0.0.1:9000
+}
+```
+
+The API, worker, beat and migrator Supervisor programs also get an explicit
+`USE_MINIO=1` override, so Plane AIO cannot effectively fall back to `0`.
+
+Expected browser upload URL:
+
+```text
+https://plane.district046.nl/uploads/...
+```
+
+Do not expose port 9000 publicly.
